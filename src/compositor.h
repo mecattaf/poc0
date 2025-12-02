@@ -8,9 +8,12 @@ class WServer;
 class WBackend;
 class WSeat;
 class WOutput;
+class WOutputRenderWindow;
 class qw_renderer;
 class qw_allocator;
 class qw_output_layout;
+class QQmlEngine;
+class QQuickItem;
 
 class Compositor : public QObject {
     Q_OBJECT
@@ -19,6 +22,9 @@ public:
     ~Compositor() override;
 
     bool start();
+
+private:
+    void initRenderWindow();
 
 private slots:
     void onOutputAdded(WOutput *output);
@@ -37,4 +43,9 @@ private:
     // Outputs
     qw_output_layout *m_outputLayout;
     QList<WOutput*> m_outputs;
+
+    // QML/WebEngine rendering
+    WOutputRenderWindow *m_renderWindow;
+    QQmlEngine *m_qmlEngine;
+    QQuickItem *m_rootItem;
 };

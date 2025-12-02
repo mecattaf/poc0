@@ -14,6 +14,8 @@ qt_add_qml_module(webcompositor
     VERSION 1.0
     QML_FILES
         ../qml/main.qml
+    RESOURCES
+        ../html/test.html
 )
 
 # Link Qt libraries
@@ -23,6 +25,13 @@ target_link_libraries(webcompositor
     Qt6::Gui
     Qt6::Qml
     Qt6::Quick
+    Qt6::WebEngineQuick
+    Qt6::WebChannel
+)
+
+# Add WebEngine compile definition
+target_compile_definitions(webcompositor PRIVATE
+    QT_WEBENGINE_ENABLED
 )
 
 # Link waylib and qwlroots if available

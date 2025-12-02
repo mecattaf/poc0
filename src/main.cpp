@@ -1,4 +1,5 @@
 #include <QGuiApplication>
+#include <QtWebEngineQuick/qtwebenginequickglobal.h>
 #include <qwlogging.h>
 #include <wserver.h>
 #include <wrenderhelper.h>
@@ -7,7 +8,13 @@
 
 int main(int argc, char *argv[])
 {
-    // CRITICAL: These must be called BEFORE QGuiApplication
+    // Phase 1: Qt attributes for WebEngine (BEFORE QGuiApplication)
+    QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
+
+    // Phase 2: WebEngine initialization (BEFORE QGuiApplication)
+    QtWebEngineQuick::initialize();
+
+    // Phase 3: wlroots/waylib initialization (BEFORE QGuiApplication)
     qw_log::init();
     WRenderHelper::setupRendererBackend();
     WServer::initializeQPA();
