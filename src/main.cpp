@@ -4,6 +4,8 @@
 #include <wserver.h>
 #include <wrenderhelper.h>
 
+WAYLIB_SERVER_USE_NAMESPACE
+
 #include "compositor.h"
 
 int main(int argc, char *argv[])
