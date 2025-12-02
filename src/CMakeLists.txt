@@ -34,23 +34,32 @@ target_compile_definitions(webcompositor PRIVATE
     QT_WEBENGINE_ENABLED
 )
 
-# Link waylib and qwlroots if available
+# Link waylib and qwlroots (submodule builds)
 if(TARGET WaylibSharedServer)
-    target_link_libraries(webcompositor
-        PRIVATE
-        WaylibSharedServer
-    )
+    target_link_libraries(webcompositor PRIVATE WaylibSharedServer)
     message(STATUS "Linking against WaylibSharedServer")
+else()
+    message(FATAL_ERROR "WaylibSharedServer target not found!")
 endif()
 
-# Link qwlroots if available
 if(TARGET qwlroots)
-    target_link_libraries(webcompositor
-        PRIVATE
-        qwlroots
-    )
+    target_link_libraries(webcompositor PRIVATE qwlroots)
     message(STATUS "Linking against qwlroots")
+else()
+    message(FATAL_ERROR "qwlroots target not found!")
 endif()
+
+# Explicitly add include directories (required for submodule builds)
+target_include_directories(webcompositor PRIVATE
+    ${CMAKE_SOURCE_DIR}/external/waylib-shared/waylib/src/server
+    ${CMAKE_SOURCE_DIR}/external/waylib-shared/waylib/src/server/kernel
+    ${CMAKE_SOURCE_DIR}/external/waylib-shared/waylib/src/server/qtquick
+    ${CMAKE_SOURCE_DIR}/external/waylib-shared/waylib/src/server/protocols
+    ${CMAKE_SOURCE_DIR}/external/waylib-shared/waylib/qwlroots/src
+    ${CMAKE_SOURCE_DIR}/external/waylib-shared/waylib/qwlroots/src/types
+    ${CMAKE_SOURCE_DIR}/external/waylib-shared/waylib/qwlroots/src/render
+    ${CMAKE_BINARY_DIR}/external/waylib-shared/waylib/src/server  # For generated headers
+)
 
 # Find and link wlroots and wayland-server via pkg-config
 find_package(PkgConfig REQUIRED)
