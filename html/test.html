@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebCompositor POC</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        h1 {
+            font-size: 3em;
+            margin: 0.5em 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        #status {
+            font-size: 1.5em;
+            margin: 0.5em 0;
+            padding: 1em 2em;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        .info {
+            margin-top: 2em;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌊 WebCompositor POC</h1>
+    <p id="status">✅ WebEngine Rendering OK</p>
+    <div class="info">
+        <p>Agent 3: WebEngine Integration Complete</p>
+        <p>Qt WebEngine running inside waylib compositor</p>
+    </div>
+    <script>
+        // Log to console for debugging
+        console.log('WebEngine content loaded successfully');
+        console.log('User Agent:', navigator.userAgent);
+
+        // Update status with timestamp
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date().toLocaleTimeString();
+            console.log('DOM loaded at:', now);
+        });
+    </script>
+</body>
+</html>

@@ -2,6 +2,11 @@
 
 #include <QDebug>
 #include <QCoreApplication>
+#include <QQmlEngine>
+#include <QQmlComponent>
+#include <QQmlContext>
+#include <QQmlProperty>
+#include <QQuickItem>
 
 // waylib headers
 #include <wserver.h>
@@ -9,6 +14,7 @@
 #include <woutput.h>
 #include <wseat.h>
 #include <wrenderhelper.h>
+#include <woutputrenderwindow.h>
 
 // qwlroots headers
 #include <qwbackend.h>
@@ -27,6 +33,9 @@ Compositor::Compositor(QObject *parent)
     , m_renderer(nullptr)
     , m_allocator(nullptr)
     , m_outputLayout(nullptr)
+    , m_renderWindow(nullptr)
+    , m_qmlEngine(nullptr)
+    , m_rootItem(nullptr)
 {
     // Create WServer instance
     m_server = new WServer(this);
@@ -71,6 +80,9 @@ Compositor::Compositor(QObject *parent)
     connect(m_backend, &WBackend::outputAdded, this, &Compositor::onOutputAdded);
     connect(m_backend, &WBackend::outputRemoved, this, &Compositor::onOutputRemoved);
 
+    // Initialize render window with WebEngine QML
+    initRenderWindow();
+
     qDebug() << "Compositor initialized";
 }
 
@@ -109,6 +121,60 @@ bool Compositor::start()
     }
 
     return true;
+}
+
+void Compositor::initRenderWindow()
+{
+    qDebug() << "Initializing render window with WebEngine QML...";
+
+    // Create WOutputRenderWindow
+    m_renderWindow = new WOutputRenderWindow(this);
+    if (!m_renderWindow) {
+        qCritical() << "Failed to create WOutputRenderWindow";
+        return;
+    }
+
+    // Get QML engine from render window
+    m_qmlEngine = m_renderWindow->engine();
+    if (!m_qmlEngine) {
+        qCritical() << "Failed to get QML engine from render window";
+        return;
+    }
+
+    // Load QML component
+    QQmlComponent component(m_qmlEngine, QUrl("qrc:/qt/qml/WebCompositor/qml/main.qml"));
+
+    if (component.isError()) {
+        qCritical() << "QML component errors:";
+        for (const auto &error : component.errors()) {
+            qCritical() << "  " << error.toString();
+        }
+        return;
+    }
+
+    // Create QML object
+    QObject *obj = component.create(m_qmlEngine->rootContext());
+    if (!obj) {
+        qCritical() << "Failed to create QML object";
+        return;
+    }
+
+    // Cast to QQuickItem
+    m_rootItem = qobject_cast<QQuickItem*>(obj);
+    if (!m_rootItem) {
+        qCritical() << "QML root object is not a QQuickItem";
+        delete obj;
+        return;
+    }
+
+    // Set parent and size
+    m_rootItem->setParentItem(m_renderWindow->contentItem());
+    m_rootItem->setSize(m_renderWindow->contentItem()->size());
+
+    // Ensure the item fills the window
+    QQmlProperty::write(m_rootItem, "anchors.fill", QVariant::fromValue(m_renderWindow->contentItem()));
+
+    qInfo() << "Render window initialized with WebEngine QML";
 }
 
 void Compositor::onOutputAdded(WOutput *output)
@@ -153,6 +219,12 @@ void Compositor::onOutputAdded(WOutput *output)
 
     // Track output
     m_outputs.append(output);
+
+    // Attach output to render window
+    if (m_renderWindow) {
+        m_renderWindow->attach(output);
+        qDebug() << "Output" << output->name() << "attached to render window";
+    }
 
     qInfo() << "Output" << output->name() << "configured successfully";
 }

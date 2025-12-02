@@ -11,6 +11,8 @@ find_package(Qt6 6.10 REQUIRED COMPONENTS
     Gui
     Qml
     Quick
+    WebEngineQuick
+    WebChannel
 )
 
 # Submodule integration
