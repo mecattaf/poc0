@@ -35,12 +35,21 @@ target_compile_definitions(webcompositor PRIVATE
 )
 
 # Link waylib and qwlroots if available
-if(TARGET Waylib::SharedServer)
+if(TARGET WaylibSharedServer)
     target_link_libraries(webcompositor
         PRIVATE
-        Waylib::SharedServer
+        WaylibSharedServer
     )
-    message(STATUS "Linking against Waylib::SharedServer")
+    message(STATUS "Linking against WaylibSharedServer")
+endif()
+
+# Link qwlroots if available
+if(TARGET qwlroots)
+    target_link_libraries(webcompositor
+        PRIVATE
+        qwlroots
+    )
+    message(STATUS "Linking against qwlroots")
 endif()
 
 # Find and link wlroots and wayland-server via pkg-config

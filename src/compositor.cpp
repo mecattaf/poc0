@@ -195,15 +195,8 @@ void Compositor::onOutputAdded(WOutput *output)
     // Initialize rendering on output
     qwOutput->init_render(m_allocator, m_renderer);
 
-    // Get the underlying wlr_output
-    wlr_output *wlrOutput = qwOutput->handle();
-    if (!wlrOutput) {
-        qWarning() << "Null wlr_output handle";
-        return;
-    }
-
-    // Configure preferred mode
-    wlr_output_mode *mode = wlrOutput->preferred_mode;
+    // Configure preferred mode using wlroots 0.19 API
+    wlr_output_mode *mode = qwOutput->preferred_mode();
     if (mode) {
         qw_output_state state;
         state.set_enabled(true);
