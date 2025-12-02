@@ -1,0 +1,170 @@
+#include "compositor.h"
+
+#include <QDebug>
+#include <QCoreApplication>
+
+// waylib headers
+#include <wserver.h>
+#include <wbackend.h>
+#include <woutput.h>
+#include <wseat.h>
+#include <wrenderhelper.h>
+
+// qwlroots headers
+#include <qwbackend.h>
+#include <qwdisplay.h>
+#include <qwoutput.h>
+#include <qwoutputlayout.h>
+#include <qwlogging.h>
+#include <render/qwallocator.h>
+#include <render/qwrenderer.h>
+
+Compositor::Compositor(QObject *parent)
+    : QObject(parent)
+    , m_server(nullptr)
+    , m_backend(nullptr)
+    , m_seat(nullptr)
+    , m_renderer(nullptr)
+    , m_allocator(nullptr)
+    , m_outputLayout(nullptr)
+{
+    // Create WServer instance
+    m_server = new WServer(this);
+
+    // Attach WBackend (autocreate DRM/Wayland/X11)
+    m_backend = m_server->attach<WBackend>();
+    if (!m_backend) {
+        qCritical() << "Failed to create WBackend";
+        return;
+    }
+
+    // Create qw_renderer and qw_allocator
+    m_renderer = qw_renderer::autocreate(*m_backend->handle());
+    if (!m_renderer) {
+        qCritical() << "Failed to create renderer";
+        return;
+    }
+
+    m_renderer->init_wl_display(*m_server->handle());
+
+    m_allocator = qw_allocator::autocreate(*m_backend->handle(), *m_renderer);
+    if (!m_allocator) {
+        qCritical() << "Failed to create allocator";
+        return;
+    }
+
+    // Create qw_output_layout
+    m_outputLayout = qw_output_layout::create(*m_server->handle());
+    if (!m_outputLayout) {
+        qCritical() << "Failed to create output layout";
+        return;
+    }
+
+    // Attach WSeat
+    m_seat = m_server->attach<WSeat>();
+    if (!m_seat) {
+        qCritical() << "Failed to create WSeat";
+        return;
+    }
+
+    // Connect WBackend::outputAdded signal
+    connect(m_backend, &WBackend::outputAdded, this, &Compositor::onOutputAdded);
+    connect(m_backend, &WBackend::outputRemoved, this, &Compositor::onOutputRemoved);
+
+    qDebug() << "Compositor initialized";
+}
+
+Compositor::~Compositor()
+{
+    // Cleanup will be handled by Qt parent-child relationships
+    // and qwlroots object lifecycle management
+}
+
+bool Compositor::start()
+{
+    if (!m_server || !m_backend) {
+        qCritical() << "Compositor not properly initialized";
+        return false;
+    }
+
+    // Start the backend
+    if (!m_backend->handle()->start()) {
+        qCritical() << "Failed to start backend";
+        return false;
+    }
+
+    // Start WServer (creates Wayland socket)
+    if (!m_server->start()) {
+        qCritical() << "Failed to start WServer";
+        return false;
+    }
+
+    // Set WAYLAND_DISPLAY environment variable
+    const char *socket = m_server->handle()->socket_name();
+    if (socket) {
+        qputenv("WAYLAND_DISPLAY", socket);
+        qInfo() << "Wayland compositor started on socket:" << socket;
+    } else {
+        qWarning() << "No socket name available";
+    }
+
+    return true;
+}
+
+void Compositor::onOutputAdded(WOutput *output)
+{
+    if (!output) {
+        qWarning() << "Null output in onOutputAdded";
+        return;
+    }
+
+    qDebug() << "Output added:" << output->name();
+
+    auto *qwOutput = output->handle();
+    if (!qwOutput) {
+        qWarning() << "Null qw_output handle";
+        return;
+    }
+
+    // Initialize rendering on output
+    qwOutput->init_render(m_allocator, m_renderer);
+
+    // Get the underlying wlr_output
+    wlr_output *wlrOutput = qwOutput->handle();
+    if (!wlrOutput) {
+        qWarning() << "Null wlr_output handle";
+        return;
+    }
+
+    // Configure preferred mode
+    wlr_output_mode *mode = wlrOutput->preferred_mode;
+    if (mode) {
+        qw_output_state state;
+        state.set_enabled(true);
+        state.set_mode(mode);
+        qwOutput->commit_state(state);
+        qDebug() << "Output mode set:" << mode->width << "x" << mode->height << "@" << mode->refresh / 1000.0 << "Hz";
+    } else {
+        qWarning() << "No preferred mode available for output";
+    }
+
+    // Add to output layout (automatic positioning)
+    m_outputLayout->add_auto(qwOutput);
+
+    // Track output
+    m_outputs.append(output);
+
+    qInfo() << "Output" << output->name() << "configured successfully";
+}
+
+void Compositor::onOutputRemoved(WOutput *output)
+{
+    if (!output) {
+        return;
+    }
+
+    qDebug() << "Output removed:" << output->name();
+
+    // Remove from tracking list
+    m_outputs.removeAll(output);
+}
