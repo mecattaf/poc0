@@ -1,3 +1,3 @@
-[submodule "external/external/waylib-shared"]
-	path = external/external/waylib-shared
-	url = https://github.com/SunRain/waylib-shared
+[submodule "external/waylib-shared"]
+	path = external/waylib-shared
+	url = https://github.com/vioken/waylib-shared
