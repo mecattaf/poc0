@@ -50,15 +50,26 @@ else()
 endif()
 
 # Explicitly add include directories (required for submodule builds)
+# CRITICAL FIX: qwlroots is a sibling of waylib, not inside it!
+# The structure is: external/waylib-shared/{waylib/, qwlroots/}
 target_include_directories(webcompositor PRIVATE
+    # Waylib server headers
     ${CMAKE_SOURCE_DIR}/external/waylib-shared/waylib/src/server
     ${CMAKE_SOURCE_DIR}/external/waylib-shared/waylib/src/server/kernel
     ${CMAKE_SOURCE_DIR}/external/waylib-shared/waylib/src/server/qtquick
     ${CMAKE_SOURCE_DIR}/external/waylib-shared/waylib/src/server/protocols
-    ${CMAKE_SOURCE_DIR}/external/waylib-shared/waylib/qwlroots/src
-    ${CMAKE_SOURCE_DIR}/external/waylib-shared/waylib/qwlroots/src/types
-    ${CMAKE_SOURCE_DIR}/external/waylib-shared/waylib/qwlroots/src/render
-    ${CMAKE_BINARY_DIR}/external/waylib-shared/waylib/src/server  # For generated headers
+    ${CMAKE_SOURCE_DIR}/external/waylib-shared/waylib/src/server/utils
+
+    # qwlroots headers - NOTE: qwlroots is SIBLING of waylib, not inside it!
+    ${CMAKE_SOURCE_DIR}/external/waylib-shared/qwlroots/src
+    ${CMAKE_SOURCE_DIR}/external/waylib-shared/qwlroots/src/types
+    ${CMAKE_SOURCE_DIR}/external/waylib-shared/qwlroots/src/render
+    ${CMAKE_SOURCE_DIR}/external/waylib-shared/qwlroots/src/util
+    ${CMAKE_SOURCE_DIR}/external/waylib-shared/qwlroots/src/interfaces
+
+    # Generated headers from build directory
+    ${CMAKE_BINARY_DIR}/external/waylib-shared/waylib/src/server
+    ${CMAKE_BINARY_DIR}/external/waylib-shared/waylib/qwlroots
 )
 
 # Find and link wlroots and wayland-server via pkg-config
