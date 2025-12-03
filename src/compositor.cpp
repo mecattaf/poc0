@@ -63,7 +63,8 @@ Compositor::Compositor(QObject *parent)
     }
 
     // Create qw_output_layout
-    m_outputLayout = qw_output_layout::create(*m_server->handle());
+    m_outputLayout = new qw_output_layout(m_server->handle()->handle());
+    m_outputLayout->setParent(this);
     if (!m_outputLayout) {
         qCritical() << "Failed to create output layout";
         return;
@@ -106,19 +107,18 @@ bool Compositor::start()
     }
 
     // Start WServer (creates Wayland socket)
-    if (!m_server->start()) {
-        qCritical() << "Failed to start WServer";
-        return false;
-    }
+    // Start WServer (creates Wayland socket)
+    m_server->start();
 
     // Set WAYLAND_DISPLAY environment variable
-    const char *socket = m_server->handle()->socket_name();
-    if (socket) {
-        qputenv("WAYLAND_DISPLAY", socket);
-        qInfo() << "Wayland compositor started on socket:" << socket;
-    } else {
-        qWarning() << "No socket name available";
-    }
+    // Set WAYLAND_DISPLAY environment variable
+    // const char *socket = m_server->handle()->socket_name();
+    // if (socket) {
+    //     qputenv("WAYLAND_DISPLAY", socket);
+    //     qInfo() << "Wayland compositor started on socket:" << socket;
+    // } else {
+    //     qWarning() << "No socket name available";
+    // }
 
     return true;
 }
@@ -135,7 +135,8 @@ void Compositor::initRenderWindow()
     }
 
     // Get QML engine from render window
-    m_qmlEngine = m_renderWindow->engine();
+    // Create QML engine
+    m_qmlEngine = new QQmlEngine(this);
     if (!m_qmlEngine) {
         qCritical() << "Failed to get QML engine from render window";
         return;
@@ -193,7 +194,7 @@ void Compositor::onOutputAdded(WOutput *output)
     }
 
     // Initialize rendering on output
-    qwOutput->init_render(m_allocator, m_renderer);
+    qwOutput->init_render(*m_allocator, *m_renderer);
 
     // Configure preferred mode using wlroots 0.19 API
     wlr_output_mode *mode = qwOutput->preferred_mode();
@@ -208,14 +209,14 @@ void Compositor::onOutputAdded(WOutput *output)
     }
 
     // Add to output layout (automatic positioning)
-    m_outputLayout->add_auto(qwOutput);
+    m_outputLayout->add_auto(*qwOutput);
 
     // Track output
     m_outputs.append(output);
 
     // Attach output to render window
     if (m_renderWindow) {
-        m_renderWindow->attach(output);
+        output->attach(m_renderWindow);
         qDebug() << "Output" << output->name() << "attached to render window";
     }
 
