@@ -17,16 +17,19 @@ int main(int argc, char *argv[])
         Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
     QGuiApplication::setQuitOnLastWindowClosed(false);
 
-    // Phase 2: Create QGuiApplication FIRST
-    QGuiApplication app(argc, argv);
-
-    // Phase 3: Initialize QtWebEngine AFTER QGuiApplication exists
-    QtWebEngineQuick::initialize();
-
-    // Phase 4: Initialize wlroots/waylib AFTER Qt is fully initialized
+    // Phase 2: Initialize platform integration BEFORE QGuiApplication
+    // WServer::initializeQPA() sets up Qt Platform Abstraction for Wayland
+    // and MUST be called before QGuiApplication is created
     qw_log::init();
     WRenderHelper::setupRendererBackend();
     WServer::initializeQPA();
+
+    // Phase 3: Create QGuiApplication AFTER platform is initialized
+    QGuiApplication app(argc, argv);
+
+    // Phase 4: Initialize QtWebEngine AFTER QGuiApplication exists
+    // Note: This will produce a deprecation warning but is functionally correct
+    QtWebEngineQuick::initialize();
 
     // Create and start compositor
     Compositor compositor;
