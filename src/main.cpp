@@ -10,28 +10,31 @@ WAYLIB_SERVER_USE_NAMESPACE
 
 int main(int argc, char *argv[])
 {
-    // Phase 1: Set Qt attributes BEFORE creating QGuiApplication
+    // Phase 1: Set Qt attributes BEFORE anything else
     QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
     QGuiApplication::setAttribute(Qt::AA_UseOpenGLES);
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(
         Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
     QGuiApplication::setQuitOnLastWindowClosed(false);
 
-    // Phase 2: Initialize platform integration BEFORE QGuiApplication
+    // Phase 2: Initialize QtWebEngine early (before QGuiApplication)
+    // This must happen before any WebEngine QML types are registered
+    qInfo() << "Initializing QtWebEngine...";
+    QtWebEngineQuick::initialize();
+
+    // Phase 3: Initialize platform integration
     // WServer::initializeQPA() sets up Qt Platform Abstraction for Wayland
-    // and MUST be called before QGuiApplication is created
+    qInfo() << "Initializing wlroots/waylib...";
     qw_log::init();
     WRenderHelper::setupRendererBackend();
     WServer::initializeQPA();
 
-    // Phase 3: Create QGuiApplication AFTER platform is initialized
+    // Phase 4: Create QGuiApplication AFTER platform is initialized
+    qInfo() << "Creating QGuiApplication...";
     QGuiApplication app(argc, argv);
 
-    // Phase 4: Initialize QtWebEngine AFTER QGuiApplication exists
-    // Note: This will produce a deprecation warning but is functionally correct
-    QtWebEngineQuick::initialize();
-
-    // Create and start compositor
+    // Phase 5: Create and start compositor
+    qInfo() << "Creating compositor...";
     Compositor compositor;
     if (!compositor.start()) {
         qCritical() << "Failed to start compositor";

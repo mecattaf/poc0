@@ -81,8 +81,8 @@ Compositor::Compositor(QObject *parent)
     connect(m_backend, &WBackend::outputAdded, this, &Compositor::onOutputAdded);
     connect(m_backend, &WBackend::outputRemoved, this, &Compositor::onOutputRemoved);
 
-    // Initialize render window with WebEngine QML
-    initRenderWindow();
+    // Don't initialize render window until we have outputs
+    // initRenderWindow();
 
     qDebug() << "Compositor initialized";
 }
@@ -235,6 +235,12 @@ void Compositor::onOutputAdded(WOutput *output)
 
     // Track output
     m_outputs.append(output);
+
+    // Initialize render window on first output (deferred from constructor)
+    if (!m_renderWindow && m_outputs.count() == 1) {
+        qInfo() << "First output added, initializing render window...";
+        initRenderWindow();
+    }
 
     // Attach output to render window
     if (m_renderWindow) {
