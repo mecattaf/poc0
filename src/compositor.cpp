@@ -63,7 +63,7 @@ Compositor::Compositor(QObject *parent)
     }
 
     // Create qw_output_layout
-    m_outputLayout = new qw_output_layout(m_server->handle()->handle());
+    m_outputLayout = new qw_output_layout(*m_server->handle());
     m_outputLayout->setParent(this);
     if (!m_outputLayout) {
         qCritical() << "Failed to create output layout";
