@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
     // Expose the channel to QML so it can be passed to the WebEngineView
     engine.rootContext()->setContextProperty("webChannel", &channel);
 
-    const QUrl url(QStringLiteral("qrc:/resources/qml/main.qml"));
+    const QUrl url(QStringLiteral("qrc:/qt/qml/WebShell/main.qml"));
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreated,
